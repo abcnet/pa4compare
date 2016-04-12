@@ -1,9 +1,13 @@
 package edu.cornell.cs.cs4120.xic.ir;
 
+import java.io.StringWriter;
+
 import edu.cornell.cs.cs4120.util.SExpPrinter;
 import edu.cornell.cs.cs4120.xic.ir.visit.AggregateVisitor;
 import edu.cornell.cs.cs4120.xic.ir.visit.CheckCanonicalIRVisitor;
 import edu.cornell.cs.cs4120.xic.ir.visit.IRVisitor;
+import zr54.assembly.OpTarget;
+import zr54.typechecker.FuncSymbolTable;
 
 /**
  * An intermediate representation for an expression evaluated under side effects
@@ -19,8 +23,16 @@ public class IRESeq extends IRExpr {
      * @param expr IR expression to be evaluated after {@code stmt}
      */
     public IRESeq(IRStmt stmt, IRExpr expr) {
+    	super();
         this.stmt = stmt;
         this.expr = expr;
+        this.children.add(stmt);
+        this.children.add(expr);
+    }
+    
+    public void updateChildren() {
+    	this.stmt = (IRStmt) this.children.get(0);
+    	this.expr = (IRExpr) this.children.get(1);
     }
 
     public IRStmt stmt() {
@@ -68,4 +80,26 @@ public class IRESeq extends IRExpr {
         expr.printSExp(p);
         p.endList();
     }
+    
+    /**
+     * Do constant folding. If any children can be folded, replace it with a IRConst node.
+     * @return if this node can be folded into a constant, return the IRConst node
+     * 		   otherwise return null
+     */
+    @Override
+    public IRConst doConstFolding(){
+    	IRConst result = expr.doConstFolding();
+    	if(result != null) {
+    		expr = result;
+    		children.set(1, result);
+    	}
+    		
+    	return null;
+    }
+
+	@Override
+	public OpTarget genAssem(StringWriter sw, IRFuncDecl f, FuncSymbolTable funcs) {
+		// TODO Auto-generated method stub
+		return operand;
+	}
 }

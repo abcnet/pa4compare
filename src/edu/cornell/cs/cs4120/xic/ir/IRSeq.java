@@ -1,5 +1,6 @@
 package edu.cornell.cs.cs4120.xic.ir;
 
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -8,6 +9,8 @@ import edu.cornell.cs.cs4120.util.SExpPrinter;
 import edu.cornell.cs.cs4120.xic.ir.visit.AggregateVisitor;
 import edu.cornell.cs.cs4120.xic.ir.visit.CheckCanonicalIRVisitor;
 import edu.cornell.cs.cs4120.xic.ir.visit.IRVisitor;
+import zr54.assembly.OpTarget;
+import zr54.typechecker.FuncSymbolTable;
 
 /**
  * An intermediate representation for a sequence of statements
@@ -20,7 +23,10 @@ public class IRSeq extends IRStmt {
      * @param stmts the statements
      */
     public IRSeq(IRStmt... stmts) {
-        this(Arrays.asList(stmts));
+    	super();
+    	this.stmts = Arrays.asList(stmts);
+    	for (int i = 0; i < this.stmts.size(); i++)
+    		this.children.add(this.stmts.get(i));
     }
 
     /**
@@ -28,7 +34,16 @@ public class IRSeq extends IRStmt {
      * @param stmts the sequence of statements
      */
     public IRSeq(List<IRStmt> stmts) {
+    	super();
         this.stmts = stmts;
+        for (int i = 0; i < this.stmts.size(); i++)
+        	this.children.add(this.stmts.get(i));
+    		
+    }
+    
+    public void updateChildren() {
+    	for (int i = 0; i < this.children.size(); i++)
+    		this.stmts.set(i, (IRStmt) this.children.get(i));
     }
 
     public List<IRStmt> stmts() {
@@ -83,4 +98,25 @@ public class IRSeq extends IRStmt {
             stmt.printSExp(p);
         p.endList();
     }
+    
+    /**
+     * Do constant folding. If any children can be folded, replace it with a IRConst node.
+     * @return if this node can be folded into a constant, return the IRConst node
+     * 		   otherwise return null
+     */
+    @Override 
+    public IRConst doConstFolding() {
+    	for(IRNode n : stmts) {
+    		n.doConstFolding();
+    	}
+    	return null;
+    }
+
+	@Override
+	public OpTarget genAssem(StringWriter sw, IRFuncDecl f, FuncSymbolTable funcs) {
+		// TODO Auto-generated method stub
+		for(IRStmt s : stmts) 
+			s.genAssem(sw, f, funcs);
+		return operand;
+	}
 }

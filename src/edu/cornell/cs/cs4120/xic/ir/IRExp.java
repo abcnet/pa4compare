@@ -1,8 +1,12 @@
 package edu.cornell.cs.cs4120.xic.ir;
 
+import java.io.StringWriter;
+
 import edu.cornell.cs.cs4120.util.SExpPrinter;
 import edu.cornell.cs.cs4120.xic.ir.visit.AggregateVisitor;
 import edu.cornell.cs.cs4120.xic.ir.visit.IRVisitor;
+import zr54.assembly.OpTarget;
+import zr54.typechecker.FuncSymbolTable;
 
 /**
  * An intermediate representation for evaluating an expression for side effects,
@@ -17,7 +21,13 @@ public class IRExp extends IRStmt {
      * @param expr the expression to be evaluated and result discarded
      */
     public IRExp(IRExpr expr) {
+    	super();
         this.expr = expr;
+        this.children.add(expr);
+    }
+    
+    public void updateChildren() {
+    	this.expr = (IRExpr) this.children.get(0);
     }
 
     public IRExpr expr() {
@@ -52,4 +62,26 @@ public class IRExp extends IRStmt {
         expr.printSExp(p);
         p.endList();
     }
+    
+    /**
+     * Do constant folding. If any children can be folded, replace it with a IRConst node.
+     * @return if this node can be folded into a constant, return the IRConst node
+     * 		   otherwise return null
+     */
+    @Override 
+    public IRConst doConstFolding() {
+    	IRConst result = expr.doConstFolding();
+    	if(result != null) {
+    		expr = result;
+    		children.set(0, result);
+    	}
+    	
+    	return null;
+    }
+
+	@Override
+	public OpTarget genAssem(StringWriter sw, IRFuncDecl f, FuncSymbolTable funcs) {
+		// TODO Auto-generated method stub
+		return operand;
+	}
 }

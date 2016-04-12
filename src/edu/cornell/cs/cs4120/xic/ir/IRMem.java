@@ -1,9 +1,13 @@
 package edu.cornell.cs.cs4120.xic.ir;
 
+import java.io.StringWriter;
+
 import edu.cornell.cs.cs4120.util.InternalCompilerError;
 import edu.cornell.cs.cs4120.util.SExpPrinter;
 import edu.cornell.cs.cs4120.xic.ir.visit.AggregateVisitor;
 import edu.cornell.cs.cs4120.xic.ir.visit.IRVisitor;
+import zr54.assembly.OpTarget;
+import zr54.typechecker.FuncSymbolTable;
 
 /**
  * An intermediate representation for a memory location
@@ -33,12 +37,21 @@ public class IRMem extends IRExpr {
      * @param expr the address of this memory location
      */
     public IRMem(IRExpr expr) {
-        this(expr, MemType.NORMAL);
+    	super();
+    	this.expr = expr;
+    	this.memType = MemType.NORMAL;
+    	this.children.add(expr);
     }
 
     public IRMem(IRExpr expr, MemType memType) {
+    	super();
         this.expr = expr;
         this.memType = memType;
+        this.children.add(expr);
+    }
+    
+    public void updateChildren() {
+    	this.expr = (IRExpr) this.children.get(0);
     }
 
     public IRExpr expr() {
@@ -77,4 +90,41 @@ public class IRMem extends IRExpr {
         expr.printSExp(p);
         p.endList();
     }
+    
+    /**
+     * Do constant folding. If any children can be folded, replace it with a IRConst node.
+     * @return if this node can be folded into a constant, return the IRConst node
+     * 		   otherwise return null
+     */
+     @Override
+     public IRConst doConstFolding() {
+    	 IRConst result = expr.doConstFolding();
+    	 if(result != null) {
+    		 expr = result;
+    		 children.set(0, result);
+    	 }
+    	 
+    	 return null;
+     }
+
+	@Override
+	public OpTarget genAssem(StringWriter sw, IRFuncDecl f, FuncSymbolTable funcs) {
+		// TODO Auto-generated method stub
+		f.count++;
+		operand = new OpTarget(f.count);
+
+		if(false) {
+			//matching tiles
+		}
+		else {
+			OpTarget src = expr.genAssem(sw, f, funcs);
+			if(src.type == OpTarget.TempType.TEMP)
+				sw.write("# MEM in t" + src.num + "\n");
+			sw.write("	movq	" + src.getTarget(false) + ", %rax\n"
+					+"	movq	(%rax), %r11\n"
+					+"	movq	%r11, " + operand.getTarget(false) + "\n");
+		}
+		
+		return operand;
+	}
 }
